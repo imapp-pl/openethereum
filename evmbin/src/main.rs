@@ -60,7 +60,7 @@ EVM implementation for Parity.
   Copyright 2015-2019 Parity Technologies (UK) Ltd.
 
 Usage:
-    openethereum-evm state-test <file> [--json --std-json --std-dump-json --only NAME --chain CHAIN --std-out-only --std-err-only]
+    openethereum-evm state-test <file> [--json --std-json --std-dump-json --only NAME --chain CHAIN --std-out-only --std-err-only --repeat REPEAT --measure-all --measure-total]
     openethereum-evm stats [options]
     openethereum-evm stats-jsontests-vm <file>
     openethereum-evm [options]
@@ -94,6 +94,9 @@ General options:
     --std-out-only     With --std-json redirect to out output only.
     --std-dump-json    Display results in standardized JSON format
                        with additional state dump.
+    --repeat REPEAT    How many times run the code
+    --measure-all      Measure all instructions
+    --measure-total    Measure total execution time of bytecode
 Display result state dump in standardized JSON format.
     --chain CHAIN      Chain spec file path.
     -h, --help         Display this message and exit.
@@ -279,6 +282,7 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     let from = arg(args.from(), "--from");
     let to = arg(args.to(), "--to");
     let code = arg(args.code(), "--code");
+    let repeat = arg(args.repeat(), "--repeat");
     let spec = arg(args.spec(), "--chain");
     let gas = arg(args.gas(), "--gas");
     let gas_price = arg(args.gas_price(), "--gas-price");
@@ -300,6 +304,7 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     params.origin = from;
     params.gas = gas;
     params.gas_price = gas_price;
+    params.repeat = repeat;
     params.code = code.map(Arc::new);
     params.data = data;
 
@@ -324,6 +329,8 @@ struct Args {
     flag_code: Option<String>,
     flag_gas: Option<String>,
     flag_gas_price: Option<String>,
+    flag_repeat: Option<String>,
+
     flag_input: Option<String>,
     flag_chain: Option<String>,
     flag_json: bool,
@@ -331,6 +338,8 @@ struct Args {
     flag_std_dump_json: bool,
     flag_std_err_only: bool,
     flag_std_out_only: bool,
+    flag_measure_all: bool,
+    flag_measure_total: bool,
 }
 
 impl Args {
@@ -366,6 +375,13 @@ impl Args {
         match self.flag_code {
             Some(ref code) => code.from_hex().map(Some).map_err(to_string),
             None => Ok(None),
+        }
+    }
+
+    pub fn repeat(&self) -> Result<U256, String> {
+        match self.flag_repeat {
+            Some(ref repeat) => repeat.parse().map_err(to_string),
+            None => Ok(U256::one()),
         }
     }
 

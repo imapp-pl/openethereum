@@ -608,7 +608,7 @@ impl<'a> CallCreateExecutive<'a> {
                 }
 
                 let origin_info = OriginInfo::from(&params);
-                let exec = self.factory.create(params, self.schedule, self.depth);
+                let exec = self.factory.create(params.clone(), self.schedule, self.depth);
 
                 let out = {
                     let mut ext = Self::as_externalities(
@@ -625,7 +625,11 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    match exec.exec(&mut ext) {
+                    for i in 0..3 {
+                        let temp_exec = self.factory.create(params.clone(), self.schedule, self.depth);
+                        temp_exec.exec(&mut ext, i);
+                    }
+                    match exec.exec(&mut ext, 3) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
                     }
@@ -696,7 +700,7 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    match exec.exec(&mut ext) {
+                    match exec.exec(&mut ext, 1) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
                     }
@@ -765,7 +769,7 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    match exec.exec(&mut ext) {
+                    match exec.exec(&mut ext, 1) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
                     }
@@ -842,7 +846,7 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    match exec.exec(&mut ext) {
+                    match exec.exec(&mut ext, 1) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
                     }
@@ -1216,6 +1220,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     origin: sender.clone(),
                     gas: init_gas,
                     gas_price: t.gas_price,
+                    repeat: U256::one(),
                     value: ActionValue::Transfer(t.value),
                     code: Some(Arc::new(t.data.clone())),
                     data: None,
@@ -1237,6 +1242,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     origin: sender.clone(),
                     gas: init_gas,
                     gas_price: t.gas_price,
+                    repeat: U256::one(),
                     value: ActionValue::Transfer(t.value),
                     code: self.state.code(address)?,
                     code_hash: self.state.code_hash(address)?,

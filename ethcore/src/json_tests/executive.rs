@@ -317,7 +317,7 @@ pub fn json_executive_test<H: FnMut(&str, HookType)>(
             ));
             let evm = vm_factory.create(params, &schedule, 0);
             let res = evm
-                .exec(&mut ex)
+                .exec(&mut ex, 1)
                 .ok()
                 .expect("TestExt never trap; resume error never happens; qed");
             // a return in finalize will not alter callcreates

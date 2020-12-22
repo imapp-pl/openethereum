@@ -200,8 +200,10 @@ pub struct Interpreter<Cost: CostType> {
 }
 
 impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
-    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext) -> vm::ExecTrapResult<GasLeft> {
+    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext, sample: i32) -> vm::ExecTrapResult<GasLeft> {
+        let mut instruction_number = 0;
         loop {
+            let timer = howlong::timer::SteadyTimer::new();
             let result = self.step(ext);
             match result {
                 InterpreterResult::Continue => {}
@@ -216,6 +218,9 @@ impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
                 },
                 InterpreterResult::Stopped => panic!("Attempted to execute an already stopped VM."),
             }
+            let time = timer.elapsed().as_nanos();
+            println!("{:?},{:?},{:?}", sample, instruction_number, time);
+            instruction_number += 1;
         }
     }
 }

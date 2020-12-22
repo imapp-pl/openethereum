@@ -80,6 +80,8 @@ pub struct ActionParams {
     pub gas: U256,
     /// Gas price.
     pub gas_price: U256,
+    /// number of repetition
+    pub repeat: U256,
     /// Transaction value.
     pub value: ActionValue,
     /// Code being executed.
@@ -103,6 +105,7 @@ impl Default for ActionParams {
             origin: Address::new(),
             gas: U256::zero(),
             gas_price: U256::zero(),
+            repeat: U256::one(),
             value: ActionValue::Transfer(U256::zero()),
             code: None,
             data: None,
@@ -125,6 +128,7 @@ impl From<ethjson::vm::Transaction> for ActionParams {
             data: Some(t.data.into()),
             gas: t.gas.into(),
             gas_price: t.gas_price.into(),
+            repeat: U256::one(),
             value: ActionValue::Transfer(t.value.into()),
             call_type: match address.is_zero() {
                 true => CallType::None,
