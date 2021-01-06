@@ -625,10 +625,6 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    for i in 0..3 {
-                        let temp_exec = self.factory.create(params.clone(), self.schedule, self.depth);
-                        temp_exec.exec(&mut ext, i);
-                    }
                     match exec.exec(&mut ext, 3) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
@@ -1385,6 +1381,9 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         T: Tracer,
         V: VMTracer,
     {
+        for i in 0..3 {
+            self.call_with_stack_depth(params.clone(), substate, 0, tracer, vm_tracer);
+        }
         self.call_with_stack_depth(params, substate, 0, tracer, vm_tracer)
     }
 
