@@ -282,7 +282,7 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     let from = arg(args.from(), "--from");
     let to = arg(args.to(), "--to");
     let code = arg(args.code(), "--code");
-    let repeat = arg(args.repeat(), "--repeat");
+    let repeat = arg(args.repeat(), "--repeat").as_u32();
     let spec = arg(args.spec(), "--chain");
     let gas = arg(args.gas(), "--gas");
     let gas_price = arg(args.gas_price(), "--gas-price");
@@ -304,15 +304,15 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     params.origin = from;
     params.gas = gas;
     params.gas_price = gas_price;
-    params.repeat = repeat;
+    params.repeat = U256::from(repeat);
     params.code = code.map(Arc::new);
     params.data = data;
 
     let mut sink = informant.clone_sink();
     let result = if args.flag_std_dump_json {
-        info::run_action(&spec, params, informant, TrieSpec::Fat)
+        info::run_action(&spec, params, informant, TrieSpec::Fat, repeat)
     } else {
-        info::run_action(&spec, params, informant, TrieSpec::Secure)
+        info::run_action(&spec, params, informant, TrieSpec::Secure, repeat)
     };
     T::finish(result, &mut sink);
 }

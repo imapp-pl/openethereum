@@ -208,7 +208,7 @@ impl EthereumMachine {
         let mut substate = Substate::new();
 
         let res = ex
-            .call(params, &mut substate, &mut NoopTracer, &mut NoopVMTracer)
+            .call(params, &mut substate, &mut NoopTracer, &mut NoopVMTracer, 1)
             .map_err(|e| ::engines::EngineError::FailedSystemCall(format!("{}", e)))?;
         let output = res.return_data.to_vec();
 

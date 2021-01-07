@@ -200,7 +200,7 @@ pub struct Interpreter<Cost: CostType> {
 }
 
 impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
-    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext, sample: i32) -> vm::ExecTrapResult<GasLeft> {
+    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext, sample: u32) -> vm::ExecTrapResult<GasLeft> {
         let mut instruction_number = 0;
         loop {
             let timer = howlong::timer::SteadyTimer::new();

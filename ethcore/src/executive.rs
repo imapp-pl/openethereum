@@ -510,6 +510,7 @@ impl<'a> CallCreateExecutive<'a> {
         substate: &mut Substate,
         tracer: &mut T,
         vm_tracer: &mut V,
+        sample: u32,
     ) -> ExecutiveTrapResult<'a, FinalizationResult> {
         match self.kind {
             CallCreateExecutiveKind::Transfer(ref params) => {
@@ -608,7 +609,7 @@ impl<'a> CallCreateExecutive<'a> {
                 }
 
                 let origin_info = OriginInfo::from(&params);
-                let exec = self.factory.create(params.clone(), self.schedule, self.depth);
+                let exec = self.factory.create(params, self.schedule, self.depth);
 
                 let out = {
                     let mut ext = Self::as_externalities(
@@ -625,7 +626,7 @@ impl<'a> CallCreateExecutive<'a> {
                         tracer,
                         vm_tracer,
                     );
-                    match exec.exec(&mut ext, 3) {
+                    match exec.exec(&mut ext, sample) {
                         Ok(val) => Ok(val.finalize(ext)),
                         Err(err) => Err(err),
                     }
@@ -888,11 +889,12 @@ impl<'a> CallCreateExecutive<'a> {
         top_substate: &mut Substate,
         tracer: &mut T,
         vm_tracer: &mut V,
+        sample: u32,
     ) -> vm::Result<FinalizationResult> {
         let mut last_res = Some((
             false,
             self.gas,
-            self.exec(state, top_substate, tracer, vm_tracer),
+            self.exec(state, top_substate, tracer, vm_tracer, sample),
         ));
 
         let mut callstack: Vec<(Option<Address>, CallCreateExecutive<'a>)> = Vec::new();
@@ -907,7 +909,7 @@ impl<'a> CallCreateExecutive<'a> {
 								None => top_substate,
 							};
 
-							last_res = Some((exec.is_create, exec.gas, exec.exec(state, parent_substate, tracer, vm_tracer)));
+							last_res = Some((exec.is_create, exec.gas, exec.exec(state, parent_substate, tracer, vm_tracer, sample)));
 						},
 						None => panic!("When callstack only had one item and it was executed, this function would return; callstack never reaches zero item; qed"),
 					}
@@ -1246,7 +1248,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     call_type: CallType::Call,
                     params_type: vm::ParamsType::Separate,
                 };
-                let res = self.call(params, &mut substate, &mut tracer, &mut vm_tracer);
+                let res = self.call(params, &mut substate, &mut tracer, &mut vm_tracer, 1);
                 let out = match &res {
                     Ok(res) => res.return_data.to_vec(),
                     _ => Vec::new(),
@@ -1277,6 +1279,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         stack_depth: usize,
         tracer: &mut T,
         vm_tracer: &mut V,
+        sample: u32,
     ) -> vm::Result<FinalizationResult>
     where
         T: Tracer,
@@ -1309,7 +1312,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             stack_depth,
             self.static_flag,
         )
-        .consume(self.state, substate, tracer, vm_tracer);
+        .consume(self.state, substate, tracer, vm_tracer, sample);
 
         match result {
             Ok(ref val) if val.apply_state => {
@@ -1346,7 +1349,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             local_stack_size.saturating_sub(STACK_SIZE_ENTRY_OVERHEAD) / STACK_SIZE_PER_DEPTH;
 
         if stack_depth != depth_threshold {
-            self.call_with_stack_depth(params, substate, stack_depth, tracer, vm_tracer)
+            self.call_with_stack_depth(params, substate, stack_depth, tracer, vm_tracer, 0)
         } else {
             thread::scope(|scope| {
                 let stack_size = cmp::max(
@@ -1357,7 +1360,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
                     .builder()
                     .stack_size(stack_size)
                     .spawn(|_| {
-                        self.call_with_stack_depth(params, substate, stack_depth, tracer, vm_tracer)
+                        self.call_with_stack_depth(params, substate, stack_depth, tracer, vm_tracer, 0)
                     })
                     .expect(
                         "Sub-thread creation cannot fail; the host might run out of resources; qed",
@@ -1376,15 +1379,16 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
         substate: &mut Substate,
         tracer: &mut T,
         vm_tracer: &mut V,
+        samples: u32,
     ) -> vm::Result<FinalizationResult>
     where
         T: Tracer,
         V: VMTracer,
     {
-        for i in 0..3 {
-            self.call_with_stack_depth(params.clone(), substate, 0, tracer, vm_tracer);
+        for i in 0..(samples - 1) {
+            self.call_with_stack_depth(params.clone(), substate, 0, tracer, vm_tracer, i);
         }
-        self.call_with_stack_depth(params, substate, 0, tracer, vm_tracer)
+        self.call_with_stack_depth(params, substate, 0, tracer, vm_tracer, samples - 1)
     }
 
     /// Creates contract with given contract params and stack depth.
@@ -1424,7 +1428,7 @@ impl<'a, B: 'a + StateBackend> Executive<'a, B> {
             stack_depth,
             self.static_flag,
         )
-        .consume(self.state, substate, tracer, vm_tracer);
+        .consume(self.state, substate, tracer, vm_tracer, 0);
 
         match result {
             Ok(ref val) if val.apply_state => {
