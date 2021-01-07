@@ -205,6 +205,9 @@ impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
         loop {
             let timer = howlong::timer::SteadyTimer::new();
             let result = self.step(ext);
+            let time = timer.elapsed().as_nanos();
+            println!("{:?},{:?},{:?}", sample, instruction_number, time);
+            instruction_number += 1;
             match result {
                 InterpreterResult::Continue => {}
                 InterpreterResult::Done(value) => return Ok(value),
@@ -218,9 +221,6 @@ impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
                 },
                 InterpreterResult::Stopped => panic!("Attempted to execute an already stopped VM."),
             }
-            let time = timer.elapsed().as_nanos();
-            println!("{:?},{:?},{:?}", sample, instruction_number, time);
-            instruction_number += 1;
         }
     }
 }
