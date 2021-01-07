@@ -195,7 +195,7 @@ impl EthereumMachine {
             origin: SYSTEM_ADDRESS,
             gas,
             gas_price: 0.into(),
-            repeat: U256::one(),
+            repeat: 1,
             value: value.unwrap_or_else(|| ActionValue::Transfer(0.into())),
             code,
             code_hash,

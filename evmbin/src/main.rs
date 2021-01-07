@@ -282,7 +282,7 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     let from = arg(args.from(), "--from");
     let to = arg(args.to(), "--to");
     let code = arg(args.code(), "--code");
-    let repeat = arg(args.repeat(), "--repeat").as_u32();
+    let repeat = arg(args.repeat(), "--repeat");
     let spec = arg(args.spec(), "--chain");
     let gas = arg(args.gas(), "--gas");
     let gas_price = arg(args.gas_price(), "--gas-price");
@@ -304,7 +304,7 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     params.origin = from;
     params.gas = gas;
     params.gas_price = gas_price;
-    params.repeat = U256::from(repeat);
+    params.repeat = repeat;
     params.code = code.map(Arc::new);
     params.data = data;
 
@@ -378,10 +378,10 @@ impl Args {
         }
     }
 
-    pub fn repeat(&self) -> Result<U256, String> {
+    pub fn repeat(&self) -> Result<u32, String> {
         match self.flag_repeat {
             Some(ref repeat) => repeat.parse().map_err(to_string),
-            None => Ok(U256::one()),
+            None => Ok(1),
         }
     }
 
