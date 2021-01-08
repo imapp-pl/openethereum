@@ -203,9 +203,11 @@ impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
     fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext, sample: u32) -> vm::ExecTrapResult<GasLeft> {
         let mut instruction_number = 0;
         loop {
-            let timer = howlong::timer::SteadyTimer::new();
+            let timer: howlong::timer::SteadyTimer;
+            let time;
+            timer = howlong::timer::SteadyTimer::new();
             let result = self.step(ext);
-            let time = timer.elapsed().as_nanos();
+            time = timer.elapsed().as_nanos();
             println!("{:?},{:?},{:?}", sample, instruction_number, time);
             instruction_number += 1;
             match result {
