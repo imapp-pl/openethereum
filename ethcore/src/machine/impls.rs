@@ -195,7 +195,6 @@ impl EthereumMachine {
             origin: SYSTEM_ADDRESS,
             gas,
             gas_price: 0.into(),
-            repeat: 1,
             value: value.unwrap_or_else(|| ActionValue::Transfer(0.into())),
             code,
             code_hash,
@@ -208,7 +207,7 @@ impl EthereumMachine {
         let mut substate = Substate::new();
 
         let res = ex
-            .call(params, &mut substate, &mut NoopTracer, &mut NoopVMTracer, 1)
+            .call(params, &mut substate, &mut NoopTracer, &mut NoopVMTracer, 1, false)
             .map_err(|e| ::engines::EngineError::FailedSystemCall(format!("{}", e)))?;
         let output = res.return_data.to_vec();
 

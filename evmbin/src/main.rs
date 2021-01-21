@@ -60,7 +60,7 @@ EVM implementation for Parity.
   Copyright 2015-2019 Parity Technologies (UK) Ltd.
 
 Usage:
-    openethereum-evm state-test <file> [--json --std-json --std-dump-json --only NAME --chain CHAIN --std-out-only --std-err-only --repeat REPEAT --measure-all --measure-total]
+    openethereum-evm state-test <file> [--json --std-json --std-dump-json --only NAME --chain CHAIN --std-out-only --std-err-only --repeat REPEAT --print-opcodes --measure-overhead]
     openethereum-evm stats [options]
     openethereum-evm stats-jsontests-vm <file>
     openethereum-evm [options]
@@ -95,8 +95,10 @@ General options:
     --std-dump-json    Display results in standardized JSON format
                        with additional state dump.
     --repeat REPEAT    How many times run the code
-    --measure-all      Measure all instructions
-    --measure-total    Measure total execution time of bytecode
+    --print-opcodes    Instrument
+    --measure-overhead
+                       Measure timer overhead
+
 Display result state dump in standardized JSON format.
     --chain CHAIN      Chain spec file path.
     -h, --help         Display this message and exit.
@@ -278,15 +280,34 @@ fn run_state_test(args: Args) {
     }
 }
 
+fn measure_overheads() {
+    for _i in 0..200000 {
+        let timer: howlong::timer::SteadyTimer;
+        let time;
+        timer = howlong::timer::SteadyTimer::new();
+        time = timer.elapsed().as_nanos();
+        println!("{:?}", time);
+    }
+}
+
 fn run_call<T: Informant>(args: Args, informant: T) {
     let from = arg(args.from(), "--from");
     let to = arg(args.to(), "--to");
     let code = arg(args.code(), "--code");
-    let repeat = arg(args.repeat(), "--repeat");
     let spec = arg(args.spec(), "--chain");
     let gas = arg(args.gas(), "--gas");
     let gas_price = arg(args.gas_price(), "--gas-price");
     let data = arg(args.data(), "--input");
+    let print_opcodes = args.flag_print_opcodes;
+
+    // if instrumenting, run only one repetition of bytecode execution
+    let repeat = if print_opcodes {1} else {arg(args.repeat(), "--repeat")};
+    let measure_overhead = args.flag_measure_overhead;
+
+    if measure_overhead {
+        measure_overheads();
+        return;
+    }
 
     if code.is_none() && to == Address::default() {
         die("Either --code or --to is required.");
@@ -304,15 +325,14 @@ fn run_call<T: Informant>(args: Args, informant: T) {
     params.origin = from;
     params.gas = gas;
     params.gas_price = gas_price;
-    params.repeat = repeat;
     params.code = code.map(Arc::new);
     params.data = data;
 
     let mut sink = informant.clone_sink();
     let result = if args.flag_std_dump_json {
-        info::run_action(&spec, params, informant, TrieSpec::Fat, repeat)
+        info::run_action(&spec, params, informant, TrieSpec::Fat, repeat, print_opcodes)
     } else {
-        info::run_action(&spec, params, informant, TrieSpec::Secure, repeat)
+        info::run_action(&spec, params, informant, TrieSpec::Secure, repeat, print_opcodes)
     };
     T::finish(result, &mut sink);
 }
@@ -338,8 +358,8 @@ struct Args {
     flag_std_dump_json: bool,
     flag_std_err_only: bool,
     flag_std_out_only: bool,
-    flag_measure_all: bool,
-    flag_measure_total: bool,
+    flag_print_opcodes: bool,
+    flag_measure_overhead: bool,
 }
 
 impl Args {

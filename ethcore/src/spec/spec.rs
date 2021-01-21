@@ -752,7 +752,6 @@ impl Spec {
                         origin: from.clone(),
                         gas: U256::max_value(),
                         gas_price: Default::default(),
-                        repeat: 1,
                         value: ActionValue::Transfer(Default::default()),
                         code: Some(Arc::new(constructor.clone())),
                         data: None,

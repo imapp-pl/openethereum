@@ -1616,6 +1616,7 @@ dependencies = [
  "ethereum-types 0.4.2",
  "ethjson",
  "evm",
+ "howlong",
  "panic_hook",
  "parity-bytes",
  "pretty_assertions",

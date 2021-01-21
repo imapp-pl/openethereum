@@ -240,6 +240,7 @@ impl<'a> EvmTestClient<'a> {
         tracer: &mut T,
         vm_tracer: &mut V,
         samples: u32,
+        print_opcodes: bool,
     ) -> Result<FinalizationResult, EvmTestError> {
         let genesis = self.spec.genesis_header();
         let info = client::EnvInfo {
@@ -251,7 +252,7 @@ impl<'a> EvmTestClient<'a> {
             gas_used: 0.into(),
             gas_limit: *genesis.gas_limit(),
         };
-        self.call_envinfo(params, tracer, vm_tracer, info, samples)
+        self.call_envinfo(params, tracer, vm_tracer, info, samples, print_opcodes)
     }
 
     /// Execute the VM given envinfo, ActionParams and tracer.
@@ -263,13 +264,14 @@ impl<'a> EvmTestClient<'a> {
         vm_tracer: &mut V,
         info: client::EnvInfo,
         samples: u32,
+        print_opcodes: bool,
     ) -> Result<FinalizationResult, EvmTestError> {
         let mut substate = state::Substate::new();
         let machine = self.spec.engine.machine();
         let schedule = machine.schedule(info.number);
         let mut executive = executive::Executive::new(&mut self.state, &info, &machine, &schedule);
         executive
-            .call(params, &mut substate, tracer, vm_tracer,samples)
+            .call(params, &mut substate, tracer, vm_tracer, samples, print_opcodes)
             .map_err(EvmTestError::Evm)
     }
 

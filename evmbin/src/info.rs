@@ -84,6 +84,7 @@ pub fn run_action<T: Informant>(
     mut informant: T,
     trie_spec: TrieSpec,
     samples: u32,
+    print_opcodes: bool,
 ) -> RunResult<T::Output> {
     informant.set_gas(params.gas);
 
@@ -100,7 +101,7 @@ pub fn run_action<T: Informant>(
         params.gas,
         spec.genesis_state(),
         |mut client| {
-            let result = match client.call(params, &mut trace::NoopTracer, &mut informant, samples) {
+            let result = match client.call(params, &mut trace::NoopTracer, &mut informant, samples, print_opcodes) {
                 Ok(r) => (Ok(r.return_data.to_vec()), Some(r.gas_left)),
                 Err(err) => (Err(err), None),
             };
