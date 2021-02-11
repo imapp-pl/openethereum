@@ -200,21 +200,50 @@ pub struct Interpreter<Cost: CostType> {
 }
 
 impl<Cost: 'static + CostType> vm::Exec for Interpreter<Cost> {
-    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext) -> vm::ExecTrapResult<GasLeft> {
-        loop {
-            let result = self.step(ext);
-            match result {
-                InterpreterResult::Continue => {}
-                InterpreterResult::Done(value) => return Ok(value),
-                InterpreterResult::Trap(trap) => match trap {
-                    TrapKind::Call(params) => {
-                        return Err(TrapError::Call(params, self));
-                    }
-                    TrapKind::Create(params, address) => {
-                        return Err(TrapError::Create(params, address, self));
-                    }
-                },
-                InterpreterResult::Stopped => panic!("Attempted to execute an already stopped VM."),
+    fn exec(mut self: Box<Self>, ext: &mut dyn vm::Ext, sample: u32, print_opcodes: bool) -> vm::ExecTrapResult<GasLeft> {
+        if print_opcodes {
+            loop {
+                let opcode = self.reader.code[self.reader.position];
+                println!("{:02X}", opcode);
+                let result = self.step(ext);
+                match result {
+                    InterpreterResult::Continue => {}
+                    InterpreterResult::Done(value) => return Ok(value),
+                    InterpreterResult::Trap(trap) => match trap {
+                        TrapKind::Call(params) => {
+                            return Err(TrapError::Call(params, self));
+                        }
+                        TrapKind::Create(params, address) => {
+                            return Err(TrapError::Create(params, address, self));
+                        }
+                    },
+                    InterpreterResult::Stopped => panic!("Attempted to execute an already stopped VM."),
+                }
+            }
+        }
+        else {
+            let mut instruction_number = 0;
+            loop {
+                let timer: howlong::timer::SteadyTimer;
+                let time;
+                timer = howlong::timer::SteadyTimer::new();
+                let result = self.step(ext);
+                time = timer.elapsed().as_nanos();
+                println!("{:?},{:?},{:?}", sample, instruction_number, time);
+                instruction_number += 1;
+                match result {
+                    InterpreterResult::Continue => {}
+                    InterpreterResult::Done(value) => return Ok(value),
+                    InterpreterResult::Trap(trap) => match trap {
+                        TrapKind::Call(params) => {
+                            return Err(TrapError::Call(params, self));
+                        }
+                        TrapKind::Create(params, address) => {
+                            return Err(TrapError::Create(params, address, self));
+                        }
+                    },
+                    InterpreterResult::Stopped => panic!("Attempted to execute an already stopped VM."),
+                }
             }
         }
     }

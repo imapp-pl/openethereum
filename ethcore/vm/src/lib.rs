@@ -46,7 +46,7 @@ pub trait Exec: Send {
     /// This function should be used to execute transaction.
     /// It returns either an error, a known amount of gas left, or parameters to be used
     /// to compute the final gas left.
-    fn exec(self: Box<Self>, ext: &mut dyn Ext) -> ExecTrapResult<GasLeft>;
+    fn exec(self: Box<Self>, ext: &mut dyn Ext, sample: u32, print_opcodes: bool) -> ExecTrapResult<GasLeft>;
 }
 
 /// Resume call interface
