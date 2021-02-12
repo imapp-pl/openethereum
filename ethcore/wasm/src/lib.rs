@@ -96,7 +96,7 @@ enum ExecutionOutcome {
 }
 
 impl WasmInterpreter {
-    pub fn run(self: Box<WasmInterpreter>, ext: &mut dyn vm::Ext, sample: u32) -> vm::Result<GasLeft> {
+    pub fn run(self: Box<WasmInterpreter>, ext: &mut dyn vm::Ext, sample: u32, print_wasm_opcodes: bool) -> vm::Result<GasLeft> {
         let (module, data) = parser::payload(&self.params, ext.schedule().wasm())?;
 
         let loaded_module =
@@ -149,10 +149,10 @@ impl WasmInterpreter {
             runtime.charge(|s| initial_memory as u64 * s.wasm().initial_mem as u64)?;
 
             let module_instance = module_instance
-                .run_start(&mut runtime, sample)
+                .run_start(&mut runtime, sample, print_wasm_opcodes)
                 .map_err(Error::Trap)?;
 
-            let invoke_result = module_instance.invoke_export("call", &[], &mut runtime, sample);
+            let invoke_result = module_instance.invoke_export("call", &[], &mut runtime, sample, print_wasm_opcodes);
 
             let mut execution_outcome = ExecutionOutcome::NotSpecial;
             if let Err(InterpreterError::Trap(ref trap)) = invoke_result {
@@ -204,7 +204,7 @@ impl WasmInterpreter {
 }
 
 impl vm::Exec for WasmInterpreter {
-    fn exec(self: Box<WasmInterpreter>, ext: &mut dyn vm::Ext, sample: u32, _print_opcodes: bool) -> vm::ExecTrapResult<GasLeft> {
-        Ok(self.run(ext, sample))
+    fn exec(self: Box<WasmInterpreter>, ext: &mut dyn vm::Ext, sample: u32, print_wasm_opcodes: bool) -> vm::ExecTrapResult<GasLeft> {
+        Ok(self.run(ext, sample, print_wasm_opcodes))
     }
 }

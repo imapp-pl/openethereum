@@ -5461,7 +5461,7 @@ dependencies = [
 [[package]]
 name = "wasmi"
 version = "0.3.0"
-source = "git+https://github.com/imapp-pl/wasmi?branch=time_measurement#2b1387d1653849cfdaee51848dfdc8ce06a416c8"
+source = "git+https://github.com/imapp-pl/wasmi?branch=time_measurement#b4ea489f5eaefab7a7cae3470c221579126905ea"
 dependencies = [
  "byteorder",
  "howlong",
